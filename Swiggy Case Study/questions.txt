@@ -1,0 +1,9 @@
+1) Find the customers who have never ordered
+2) Average Price/dish
+3) Find top restaurant in terms of number of orders for a given month
+4) Restaurants with monthly sales > x for
+5) Show all orders with order details for a particular customer in particular date range
+6) Find restaurant with max repeated customers
+7) Month over month revenue growth of swiggy
+8) Customer's favourite food
+9) Find most loyal customers for all restaurants
