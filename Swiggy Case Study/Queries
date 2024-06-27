@@ -1,0 +1,154 @@
+-- find customers who have never ordered
+
+SELECT 
+    name
+FROM
+    users
+WHERE
+    user_id NOT IN (SELECT 
+            user_id
+        FROM
+            orders);
+
+
+
+
+
+-- Average Price per Dish
+
+select f.f_name, avg(price) as 'Avg Price'
+from menu m
+join food f
+on m.f_id = f.f_id
+group by f.f_name;
+
+
+
+
+
+-- Find top restaurant in terms of number of orders for a given month
+
+select r.r_name, count(*) as 'month' 
+from orders o
+join restaurants r
+on o.r_id = r.r_id
+where monthname(date) like 'June'
+group by r.r_name
+order by count(*) desc limit 1;
+
+
+
+
+
+-- Restaurants with monthly sales>x for
+
+select r.r_name, sum(amount) as 'revenue'
+from  orders o
+join restaurants r
+on o.r_id = r.r_id
+where monthname(date) like 'June'
+group by r.r_name
+having revenue > 500;
+
+
+
+
+
+
+-- Show all orders with order details for a particular customer in a particular date range
+
+select o.order_id, r.r_name, f.f_name
+from orders o 
+join restaurants r
+on r.r_id = o.r_id
+join order_details od
+on o.order_id = od.order_id
+join food f 
+on f.f_id = od.f_id
+where user_id = (select user_id from users where name like 'Ankit')
+and date > '2022-06-10' AND date < '2022-07-10';
+
+
+
+
+
+
+-- Find restaurant with max repeated customers
+
+SELECT r.r_name, t.loyal_customers
+FROM (
+    SELECT r_id, COUNT(*) AS loyal_customers
+    FROM (
+        SELECT r_id, user_id, COUNT(*) AS visits
+        FROM orders
+        GROUP BY r_id, user_id
+        HAVING COUNT(*) > 1
+    ) t1
+    GROUP BY r_id
+) t
+JOIN restaurants r ON r.r_id = t.r_id
+ORDER BY t.loyal_customers DESC
+LIMIT 1;
+
+
+
+
+
+-- Month over month revenue growth of swiggy
+
+select month, ((revenue - prev)/prev)*100 from (
+
+with sales as 
+(
+	select monthname(date) as 'month', sum(amount) as revenue
+	from orders
+	group by month
+)
+
+select month, revenue, lag(revenue, 1) over(order by revenue) as prev from sales
+) t
+
+
+
+
+    
+-- Customer's favourite food
+
+with temp as(
+	select o.user_id, od.f_id, count(*) as 'frequency'
+	from orders o 
+	join order_details od
+	on o.order_id = od.order_id
+	group by o.user_id, od.f_id
+)
+
+select u.name, f.f_name, t1.frequency
+from temp t1 
+join users u
+on u.user_id = t1.user_id
+join food f
+on f.f_id = t1.f_id
+where t1.frequency = (
+			select max(frequency)
+            from temp t2 
+            where t2.user_id = t1.user_id
+)
+
+
+
+
+
+
+-- Find most loyal customers for all restaurants
+
+
+SELECT r.r_name AS restaurant_name, u.name AS customer_name, t.max_visits
+FROM (
+    SELECT o.r_id, o.user_id, COUNT(*) AS visits, MAX(COUNT(*)) OVER (PARTITION BY o.r_id) AS max_visits
+    FROM orders o
+    GROUP BY o.r_id, o.user_id
+) t
+JOIN restaurants r ON r.r_id = t.r_id
+JOIN users u ON u.user_id = t.user_id
+WHERE t.visits = t.max_visits
+ORDER BY r.r_name, u.name;
